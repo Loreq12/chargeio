@@ -1,0 +1,53 @@
+####################### INICJALIZACJA #######################
+
+Najpierw potrzebować będziemy dwóch baz danych (MySql oraz MongoDB). Ze względu na brak oficjalnego repozytorium Mongo
+na Arch-based będziesz potrzebować warkaround. Najpierw konfiguracja bazy relacyjnej.
+
+Utworzenie bazy danych -> create database chargeio;
+Utworzenie użytkownika -> create user 'chargeioadmin'@'%' identified by 'zaq1@WSX';
+Uprawnienia -> grant all on chargeio.* to 'chargeioadmin'@'%';
+
+Teraz zajmiemy się Mongołem XD. Robisz to tylko raz
+Instalacja dockera -> pacman -S docker
+Uruchomienie docker daemona -> systemctl start docker.service
+Zaciągnięcie obraazu mongo -> docker pull mongo
+
+Za każdym razem jak będziesz chciał uruchomić mongoła
+Uruchomienie mongo -> docker run -d -p 27777:27017
+
+Teraz możesz odpalić projekt ;) Ale zanim go skompilujesz to sprawdź czy konfig do uruchomienia projektu nie ma
+dzikiej ścieżki. Bo w moim IntelliJ jest /Users/loreq/Developer/ChargeIO
+
+####################### STRUKTURA PROJEKTU #######################
+
+src/java/com.photon.ChargeIO/controllers -> Tutaj będziemy mapować nasze requesty. Jeden plik z nazwą w formacie
+'nazwaKlasy'Api np.: PointApi, FactoryApi, UserApi
+
+src/java/com.photon.ChargeIO/mongo -> Trzymamy rzeczy związane z nierelacyjną bazą danych
+
+src/java/com.photon.ChargeIO/mongo/document -> Klasy reprezentujące tabele w bazie nierelacyjnej. Budowa klasy:
+prywatne składniki, gettery i settery (brak konstruktora!) + przeładowany toString
+
+src/java/com.photon.ChargeIO/mongo/repository -> Pomosty pomiędzy klasami w javie a bazą danych. Jednolinijkowy interfejs
+z rozszerzeniem innego interfejsu. Pierwszy parametr szablony to klasa do której będziemy się odnosić a drugi
+zawsze będzie Stringiem (nie stringiem XD). Jeżeli będziemy potrzebowali dodatkowych metod do robienia kwerend to będziemy
+robili je zgodnie z tymi wytycznymi https://spring.io/guides/gs/accessing-data-mongodb/
+
+src/java/com.photon.ChargeIO/mysql -> Trzymamy rzeczy związane z relacyjną bazą danych
+
+src/java/com.photon.ChargeIO/mysql/entity -> Klasy reprezentujące tabele w bazie nierelacyjnej. Budowa klasy:
+prywatne składniki, gettery i settery (brak konstruktora!) + przeładowany toString
+
+src/java/com.photon.ChargeIO/mysql/repository -> Pomosty pomiędzy klasami w javie a bazą danych. Jednolinijkowy interfejs
+z rozszerzeniem innego interfejsu. Pierwszy parametr szablony to klasa do której będziemy się odnosić a drugi
+zawsze będzie Longiem.
+
+####################### NIUANSE #######################
+1. Każda klasa reprezentująca tabelę będzie potrzebowała id. Robi się to odpowiednimi modyfikatorami @Id (inny dla relacyjnej
+i nierelacyjnej bazy danych) w parze z modyfikatorem @GeneratedValue aby id było generowane automatycznie.
+
+2. Każdy kontroler który do zmiennej przypisuje interfejs pomostu między bazą a klasą musi zostać oznaczony modyfikatorem
+@Autowired (dependency injection). Jeżeli chcesz o tym poczytać to polecam dokumentację do Angulara. Co prawda JS ale
+lepiej wyjaśnia jak to działa niż bieda docsy Javy, a zasada działania ta sama.
+
+3. Wszystkie ścieżki w requestMappingu podajemy ze '/' na końcu dla ujednolicenia.

@@ -7,7 +7,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class ChargeIoApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(ChargeIoApplication.class, args);
+        System.out.println("[MAIN] System initialization");
+        SpringApplication.run(ChargeIoApplication.class, args);
 	}
 
 }
