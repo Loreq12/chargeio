@@ -51,7 +51,7 @@ public class Dijkstra {
                     distances[neighbour_index] = new_dist;
                 }
 
-                unsettled.add(neighbour_index);
+                if(!unsettled.contains(neighbour_index)) unsettled.add(neighbour_index);
             }
 
             unsettled.remove(new Integer(evaluated_index));
