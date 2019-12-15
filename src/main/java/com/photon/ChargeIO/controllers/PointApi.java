@@ -2,6 +2,9 @@ package com.photon.ChargeIO.controllers;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.photon.ChargeIO.misc.Dijkstra;
+import com.photon.ChargeIO.misc.DijkstraNode;
+import com.photon.ChargeIO.misc.NodePreparator;
 import com.photon.ChargeIO.mongo.document.Point;
 import com.photon.ChargeIO.mongo.repository.PointRepo;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,11 +13,13 @@ import org.springframework.context.event.EventListener;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.ServletContextListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,6 +28,8 @@ public class PointApi {
 
     @Autowired
     private PointRepo repo;
+
+    DijkstraNode [] nodes;
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
@@ -52,10 +59,26 @@ public class PointApi {
             System.out.println("[MONGO] Error has occured during data generation");
             e.printStackTrace();
         }
+
+        List <Point> lista = this.repo.findAll();
+        try {
+            NodePreparator preparator = new NodePreparator(lista);
+            nodes = preparator.prepare();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
     }
 
     @RequestMapping(value = "/points/", method = RequestMethod.GET)
     public List<Point> listAllPoints() {
         return this.repo.findAll();
+    }
+
+    @RequestMapping(value = "/dijkstra/", method = RequestMethod.GET)
+    public List<Integer> searchPath(@RequestParam("begin") int begin, @RequestParam("end") int end) {
+        //System.out.println("DIJKSTRA NO SIEMA");
+        Dijkstra dijkstra = new Dijkstra(nodes);
+        return dijkstra.shortestPath(begin, end);
     }
 }
