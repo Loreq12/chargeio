@@ -4,6 +4,7 @@ target/
 !**/src/main/**
 !**/src/test/**
 .DS_Store
+pom.xml
 src/main/resource/application.properties
 
 ### STS ###

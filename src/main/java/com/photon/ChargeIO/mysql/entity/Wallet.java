@@ -14,4 +14,28 @@ public class Wallet {
     private String accountNumber;
     private Double amount;
 
+    @Override
+    public String toString() {
+        return "Wallet{" +
+                "id=" + id +
+                ", accountNumber='" + accountNumber + '\'' +
+                ", amount=" + amount +
+                '}';
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
+    public Double getAmount() {
+        return amount;
+    }
+
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
 }

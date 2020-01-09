@@ -1,7 +1,6 @@
 package com.photon.ChargeIO.mongo.document;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -13,7 +12,7 @@ public class Point {
     private String id;
     private String name;
     private List<Integer> neighbours;
-    private GeoJsonPoint position;
+    private org.springframework.data.geo.Point position;
 
     public String getId() {
         return id;
@@ -39,11 +38,11 @@ public class Point {
         this.neighbours = neighbours;
     }
 
-    public GeoJsonPoint getPosition() {
+    public org.springframework.data.geo.Point getPosition() {
         return position;
     }
 
-    public void setPosition(GeoJsonPoint position) {
+    public void setPosition(org.springframework.data.geo.Point position) {
         this.position = position;
     }
 }

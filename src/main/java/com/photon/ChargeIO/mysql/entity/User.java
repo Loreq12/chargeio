@@ -1,7 +1,7 @@
 package com.photon.ChargeIO.mysql.entity;
 
 import javax.persistence.*;
-import java.sql.Date;
+import java.util.Date;
 
 @Entity
 public class User {

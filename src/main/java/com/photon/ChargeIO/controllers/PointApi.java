@@ -2,6 +2,8 @@ package com.photon.ChargeIO.controllers;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.photon.ChargeIO.misc.Dijkstra;
 import com.photon.ChargeIO.misc.DijkstraNode;
 import com.photon.ChargeIO.misc.NodePreparator;
@@ -10,7 +12,12 @@ import com.photon.ChargeIO.mongo.repository.PointRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+//import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,9 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.ServletContextListener;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.geoNear;
+import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
 @RestController
 public class PointApi {
@@ -29,7 +38,7 @@ public class PointApi {
     @Autowired
     private PointRepo repo;
 
-    DijkstraNode [] nodes;
+    private DijkstraNode [] nodes;
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
@@ -48,7 +57,7 @@ public class PointApi {
                 p.setName(_i.getKey());
                 p.setNeighbours(((Map<String, List<Integer>>)_i.getValue()).get("neighbours"));
                 List<Double> qq = ((Map<String, List<Double>>)_i.getValue()).get("position");
-                p.setPosition(new GeoJsonPoint(
+                p.setPosition(new org.springframework.data.geo.Point(
                         qq.get(0),
                         qq.get(1)
                 ));
@@ -60,6 +69,7 @@ public class PointApi {
             e.printStackTrace();
         }
 
+        //Sort them all
         List <Point> lista = this.repo.findAll();
         try {
             NodePreparator preparator = new NodePreparator(lista);
@@ -70,7 +80,12 @@ public class PointApi {
 
     }
 
-    @RequestMapping(value = "/points/", method = RequestMethod.GET)
+    @RequestMapping(value = "/point/nearest/", method = RequestMethod.GET)
+    public Point getNearestPoint( @RequestParam("x") double x, @RequestParam("y") double y) {
+        return this.repo.findTop1ByPositionNear(new org.springframework.data.geo.Point(x, y));
+    }
+
+    @RequestMapping(value = "/point/all/", method = RequestMethod.GET)
     public List<Point> listAllPoints() {
         return this.repo.findAll();
     }

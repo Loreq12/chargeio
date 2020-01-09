@@ -49,7 +49,7 @@ public class NodePreparator {
 
         int name = Integer.parseInt(point.getName());
         List<Integer> neighbours = point.getNeighbours();
-        GeoJsonPoint pos = point.getPosition();
+        org.springframework.data.geo.Point pos = point.getPosition();
 
         for(Integer n_name : neighbours){
             Point n_point = findPoint(n_name);
@@ -92,7 +92,7 @@ public class NodePreparator {
         throw new Exception("DIJKSTRA point name:"+name+" not found");
     }
 
-    private double pointsLength(GeoJsonPoint pos1, GeoJsonPoint pos2){
+    private double pointsLength(org.springframework.data.geo.Point pos1, org.springframework.data.geo.Point pos2){
         double dx = pos1.getX() - pos2.getX();
         double dy = pos1.getY() - pos2.getY();
         double lensq = dx*dx + dy*dy;
