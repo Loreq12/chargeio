@@ -2,8 +2,6 @@ package com.photon.ChargeIO.controllers;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoClients;
 import com.photon.ChargeIO.misc.Dijkstra;
 import com.photon.ChargeIO.misc.DijkstraNode;
 import com.photon.ChargeIO.misc.NodePreparator;
@@ -12,12 +10,6 @@ import com.photon.ChargeIO.mongo.repository.PointRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-//import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
-import org.springframework.data.mongodb.core.query.NearQuery;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -26,11 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.ServletContextListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.springframework.data.mongodb.core.aggregation.Aggregation.geoNear;
-import static org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation;
 
 @RestController
 public class PointApi {
@@ -86,14 +76,17 @@ public class PointApi {
     }
 
     @RequestMapping(value = "/point/all/", method = RequestMethod.GET)
-    public List<Point> listAllPoints() {
-        return this.repo.findAll();
+    public HashMap<String, List<Point>> listAllPoints() {
+        return new HashMap<String, List<Point>>(){{
+            put("points", repo.findAll());
+        }};
     }
 
     @RequestMapping(value = "/dijkstra/", method = RequestMethod.GET)
-    public List<Integer> searchPath(@RequestParam("begin") int begin, @RequestParam("end") int end) {
-        //System.out.println("DIJKSTRA NO SIEMA");
+    public HashMap<String, List<Integer>> searchPath(@RequestParam("begin") int begin, @RequestParam("end") int end) {
         Dijkstra dijkstra = new Dijkstra(nodes);
-        return dijkstra.shortestPath(begin, end);
+        return new HashMap<String, List<Integer>>(){{
+            put("path", dijkstra.shortestPath(begin, end));
+        }};
     }
 }

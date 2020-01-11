@@ -23,7 +23,9 @@ import com.auth0.jwt.*;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.sql.Date;
 
@@ -41,19 +43,24 @@ public class UserApi {
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
-        System.out.println("[MYSQL] Creating  master user");
+        System.out.println("[MYSQL] Creating users");
 
-        Role adminRole = this.rRepo.findByName("kurwa");
+        HashMap<String, List<String>> data = new HashMap<>(){{
+            put("user", Arrays.asList("admin@charge.io", "user@gmail.com"));
+            put("password", Arrays.asList("zaq1@WSX", "zaq1@WSX"));
+            put("role", Arrays.asList("admin", "user"));
+        }};
 
-        User admin = new User();
-        admin.setEmail("admin@charge.io");
-        admin.setPassword(BCrypt.hashpw("zaq1@WSX", BCrypt.gensalt()));
-        admin.setRole(adminRole);
-
-        try {
-            this.uRepo.save(admin);
-        } catch (DataIntegrityViolationException e) {
-            System.out.println("[MYSQL] Master user already exist");
+        for (int i = 0; i < data.get("user").size(); i++) {
+            User admin = new User();
+            admin.setEmail(data.get("user").get(i));
+            admin.setPassword(BCrypt.hashpw(data.get("password").get(i), BCrypt.gensalt()));
+            admin.setRole(this.rRepo.findByName(data.get("role").get(i)));
+            try {
+                this.uRepo.save(admin);
+            } catch (DataIntegrityViolationException e) {
+                System.out.println("[MYSQL] User already exist");
+            }
         }
         System.out.println("[MYSQL] Users genereted successfully");
     }
