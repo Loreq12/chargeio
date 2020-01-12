@@ -9,6 +9,7 @@ public class ChargeType {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String name;
+    private Price price;
 
     @Override
     public String toString() {
@@ -24,5 +25,13 @@ public class ChargeType {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Price getPrice() {
+        return price;
+    }
+
+    public void setPrice(Price price) {
+        this.price = price;
     }
 }

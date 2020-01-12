@@ -21,6 +21,10 @@ public class Station {
     private Long charge;
     private Long pointNumber;
     private Boolean occupied;
+    private ChargeType type;
+
+    @OneToOne
+    private User occupiedBy = null;
 
     @Override
     public String toString() {
@@ -126,5 +130,21 @@ public class Station {
 
     public void setOccupied(Boolean occupied) {
         this.occupied = occupied;
+    }
+
+    public User getOccupiedBy() {
+        return occupiedBy;
+    }
+
+    public void setOccupiedBy(User occupiedBy) {
+        this.occupiedBy = occupiedBy;
+    }
+
+    public ChargeType getType() {
+        return type;
+    }
+
+    public void setType(ChargeType type) {
+        this.type = type;
     }
 }
