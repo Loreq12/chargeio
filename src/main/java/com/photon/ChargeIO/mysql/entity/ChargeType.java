@@ -9,6 +9,7 @@ public class ChargeType {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String name;
+    @OneToOne
     private Price price;
 
     @Override

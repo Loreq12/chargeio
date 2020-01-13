@@ -21,6 +21,8 @@ public class Station {
     private Long charge;
     private Long pointNumber;
     private Boolean occupied;
+    private Boolean service;
+    @OneToOne
     private ChargeType type;
 
     @OneToOne
@@ -42,6 +44,14 @@ public class Station {
                 ", pointNumber=" + pointNumber +
                 ", occupied=" + occupied +
                 '}';
+    }
+
+    public Boolean getService() {
+        return service;
+    }
+    
+    public void setService(Boolean service) {
+        this.service = service;
     }
 
     public PowerPlant getPowerPlant() {

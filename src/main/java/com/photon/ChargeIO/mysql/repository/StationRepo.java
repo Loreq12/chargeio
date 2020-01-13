@@ -3,8 +3,6 @@ package com.photon.ChargeIO.mysql.repository;
 import com.photon.ChargeIO.mysql.entity.Station;
 import org.springframework.data.repository.CrudRepository;
 
-import java.util.Optional;
-
 public interface StationRepo extends CrudRepository<Station, Long> {
     Station findByName(String name);
 }

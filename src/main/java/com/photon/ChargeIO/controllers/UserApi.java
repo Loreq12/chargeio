@@ -2,7 +2,6 @@ package com.photon.ChargeIO.controllers;
 
 import com.auth0.jwt.algorithms.Algorithm;
 import com.photon.ChargeIO.mysql.entity.Role;
-import com.photon.ChargeIO.mysql.entity.TransactionHistory;
 import com.photon.ChargeIO.mysql.entity.User;
 import com.photon.ChargeIO.mysql.entity.Wallet;
 import com.photon.ChargeIO.mysql.repository.RoleRepo;
@@ -29,7 +28,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.sql.Date;
 
 @RestController
 public class UserApi {
@@ -42,9 +40,6 @@ public class UserApi {
 
     @Autowired
     private WalletRepo wRepo;
-
-    @Autowired
-    private TransactionRepo tRepo;
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
@@ -74,8 +69,6 @@ public class UserApi {
             } catch (DataIntegrityViolationException e) {
                 System.out.println("[MYSQL] User already exist");
             }
-
-
         }
         System.out.println("[MYSQL] Users genereted successfully");
     }
@@ -124,69 +117,4 @@ public class UserApi {
             put("access_token", JWT.create().withClaim("email", u.getEmail()).sign(Algorithm.HMAC256("secret")));}};
     }
 
-
-    @RequestMapping(value = "/addmoney/", method = RequestMethod.POST)
-    public String addmoney(@RequestParam("email") String email, @RequestParam("money") double money) {
-        User u = this.uRepo.findByEmail(email);
-        if (u == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-
-        Wallet wallet = u.getWallet();
-        double saldo = wallet.getAmount();
-        wallet.setAmount(saldo + money);
-
-        wRepo.save(wallet);
-
-        TransactionHistory history = new TransactionHistory();
-        history.setDate(new Date(System.currentTimeMillis()));
-        history.setWallet(wallet);
-        history.setAmmont_change(money);
-
-        tRepo.save(history);
-
-        return "success";
-    }
-
-    @RequestMapping(value = "/getmoney/", method = RequestMethod.POST)
-    public double  getmoney(@RequestParam("email") String email) {
-        User u = this.uRepo.findByEmail(email);
-        if (u == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-
-        Wallet wallet = u.getWallet();
-        double saldo = wallet.getAmount();
-
-
-
-        return saldo;
-    }
-
-
-    @RequestMapping(value = "/getransactions/", method = RequestMethod.POST)
-    public List<TransactionHistory>  gettransactions(@RequestParam("email") String email) {
-        User u = this.uRepo.findByEmail(email);
-        if (u == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-
-        Wallet wallet = u.getWallet();
-        return tRepo.findByWallet(wallet);
-    }
-
-    @RequestMapping(value = "/payment/", method = RequestMethod.POST)
-    public String payment(@RequestParam("email") String email, @RequestParam("power") double power) {
-        User u = this.uRepo.findByEmail(email);
-        if (u == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-
-        Wallet w = u.getWallet();
-        double am = w.getAmount();
-        w.setAmount(am - power);
-
-        TransactionHistory hist = new TransactionHistory();
-        hist.setWallet(w);
-        hist.setAmmont_change(-power);
-        tRepo.save(hist);
-
-        return "payedXD";
-    }
 }

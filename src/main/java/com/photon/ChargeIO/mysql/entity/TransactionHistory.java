@@ -23,6 +23,10 @@ public class TransactionHistory {
                 '}';
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public Wallet getWallet() {
         return wallet;
     }

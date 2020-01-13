@@ -1,6 +1,5 @@
 package com.photon.ChargeIO.mysql.repository;
 
-import com.photon.ChargeIO.mysql.entity.Station;
 import com.photon.ChargeIO.mysql.entity.TransactionHistory;
 import com.photon.ChargeIO.mysql.entity.Wallet;
 import org.springframework.data.repository.CrudRepository;

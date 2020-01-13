@@ -1,15 +1,25 @@
 package com.photon.ChargeIO.controllers;
 
-import com.photon.ChargeIO.mysql.entity.*;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.photon.ChargeIO.mongo.document.Point;
+import com.photon.ChargeIO.mongo.repository.PointRepo;
+import com.photon.ChargeIO.mysql.entity.ChargeType;
+import com.photon.ChargeIO.mysql.entity.PowerPlant;
+import com.photon.ChargeIO.mysql.entity.Price;
+import com.photon.ChargeIO.mysql.entity.Station;
+import com.photon.ChargeIO.mysql.entity.User;
+import com.photon.ChargeIO.mysql.repository.ChargeTypeRepo;
 import com.photon.ChargeIO.mysql.repository.PowerPlantRepo;
+import com.photon.ChargeIO.mysql.repository.PriceRepo;
 import com.photon.ChargeIO.mysql.repository.StationRepo;
 import com.photon.ChargeIO.mysql.repository.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCrypt;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,7 +27,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 @RestController
 public class StationApi {
@@ -30,6 +39,15 @@ public class StationApi {
 
     @Autowired
     private UserRepo uRepo;
+
+    @Autowired
+    private PriceRepo pRepo;
+
+    @Autowired
+    private ChargeTypeRepo cRepo;
+
+    @Autowired
+    private PointRepo ptRepo;
 
     @EventListener(ApplicationReadyEvent.class)
     public void init() {
@@ -46,6 +64,7 @@ public class StationApi {
             put("charge", Arrays.asList(300L, 270L, 440L));
             put("pointNumber", Arrays.asList(399L, 464L, 196L));
             put("occupied", Arrays.asList(false, false, false));
+            put("service", Arrays.asList(false, false, false));
         }};
 
         for (int i = 0; i < data.get("name").size(); i++) {
@@ -61,12 +80,17 @@ public class StationApi {
             s.setCharge((Long) data.get("charge").get(i));
             s.setPointNumber((Long) data.get("pointNumber").get(i));
             s.setOccupied((Boolean) data.get("occupied").get(i));
+            s.setService((Boolean) data.get("service").get(i));
 
             Price price = new Price();
             price.setPrice(1.1);
+            this.pRepo.save(price);
+
             ChargeType type = new ChargeType();
             type.setName("normal");
             type.setPrice(price);
+            this.cRepo.save(type);
+
             s.setType(type);
 
             this.sRepo.save(s);
@@ -75,40 +99,81 @@ public class StationApi {
     }
 
     @RequestMapping(value = "/stations/", method = RequestMethod.GET)
-    public List<Station> listPowerPlants() {
-        List<Station> l = new LinkedList<>();
-        this.sRepo.findAll().forEach(l::add);
-        return l;
+    public HashMap<String, List<Station>> listPowerPlants(@RequestHeader("Auth") String auth) {
+        try{
+            JWT.require(Algorithm.HMAC256("secret")).build().verify(auth).getClaim("email").asString();
+            List<Station> l = new LinkedList<>();
+            this.sRepo.findAll().forEach(l::add);
+            return new HashMap<String, List<Station>>(){{
+                put("stations", l);
+            }};
+        } catch (JWTVerificationException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization token is not valid8");
+        }
+    }
+
+    @RequestMapping(value = "/stations/nearest/", method = RequestMethod.GET)
+    public Station findNearestStation(
+        @RequestHeader("Auth") String auth,
+        @RequestParam("x") double x,
+        @RequestParam("y") double y) {
+        try{
+            JWT.require(Algorithm.HMAC256("secret")).build().verify(auth).getClaim("email").asString();
+            List<Point> points = this.ptRepo.findByPositionNear(new org.springframework.data.geo.Point(x, y));
+            List<Station> stations = new LinkedList<>();
+            this.sRepo.findAll().forEach(stations::add);
+            for(Point p: points){
+                for(Station s: stations){
+                    if (s.getPointNumber().toString().equals(p.getName()) && !s.getService()) {
+                        return s;
+                    }
+                }
+            }
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Can not find nearest charging station");
+        } catch (JWTVerificationException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization token is not valid8");
+        }
     }
 
     @RequestMapping(value = "/bookstation/", method = RequestMethod.POST)
-    public String bookStation(@RequestParam("station") String station, @RequestParam("email") String email) {
-        System.out.println("szukam stacji: "+ station);
-        User u = this.uRepo.findByEmail(email);
-        if (u == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        Station s = sRepo.findByName(station);
-        if (s == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Station not found");
+    public String bookStation(@RequestParam("station") String station, @RequestHeader("Auth") String auth) {
+        try {
+            String email = JWT.require(Algorithm.HMAC256("secret")).build().verify(auth).getClaim("email").asString();
 
-        if (s.getOccupied()) return "Station already occupied";
-        s.setOccupied(true);
-        s.setOccupiedBy(u);
+            System.out.println("szukam stacji: " + station);
+            User u = this.uRepo.findByEmail(email);
+            if (u == null)
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+            Station s = sRepo.findByName(station);
+            if (s == null)
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Station not found");
 
-        sRepo.save(s);
-        return "Booking successful";
+            if (s.getOccupied()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Station already occupied");;
+            s.setOccupied(true);
+            s.setOccupiedBy(u);
+
+            sRepo.save(s);
+            throw new ResponseStatusException(HttpStatus.OK, "");
+        } catch (JWTVerificationException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization token is not valid");
+        }
     }
 
     @RequestMapping(value = "/unbookstation/", method = RequestMethod.POST)
-    public String unbookStation(@RequestParam("station") String name) {
-        Station s = sRepo.findByName(name);
-        if (s == null)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Station not found");
+    public String unbookStation(@RequestParam("station") String name, @RequestHeader("Auth") String auth) {
+        try {
+            JWT.require(Algorithm.HMAC256("secret")).build().verify(auth).getClaim("email").asString();
+            Station s = sRepo.findByName(name);
+            if (s == null)
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Station not found");
 
-        s.setOccupied(false);
-        s.setOccupiedBy(null);
+            s.setOccupied(false);
+            s.setOccupiedBy(null);
 
-        sRepo.save(s);
-        return "unbooked";
+            sRepo.save(s);
+            throw new ResponseStatusException(HttpStatus.OK, "");
+        } catch (JWTVerificationException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization token is not valid");
+        }
     }
 }
